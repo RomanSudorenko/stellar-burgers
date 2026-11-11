@@ -16,20 +16,34 @@ import {
   Register,
   ResetPassword,
 } from '@pages';
+import {
+  fetchIngredients,
+  selectIngredients,
+  selectIngredientsLoading,
+  selectIngredientsError,
+} from '@slices/ingredients';
 import { Preloader } from '@ui';
+import { clsx } from 'clsx';
+import { useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 
+import { useDispatch, useSelector } from '@services/store';
+
 import type { AppContentProps, TLocationState } from './type';
-import type { TIngredient } from '@utils-types';
 
 import '../../index.css';
 
 import styles from './app.module.css';
 
 const App = (): React.JSX.Element => {
-  const ingredients: TIngredient[] = [];
-  const isIngredientsLoading = false;
-  const ingredientsError = null;
+  const dispatch = useDispatch();
+  const ingredients = useSelector(selectIngredients);
+  const isIngredientsLoading = useSelector(selectIngredientsLoading);
+  const ingredientsError = useSelector(selectIngredientsError);
+
+  useEffect(() => {
+    void dispatch(fetchIngredients());
+  }, [dispatch]);
 
   return (
     <div className={styles.app}>
@@ -89,7 +103,17 @@ const RouteComponent = (): React.JSX.Element => {
         <Route path="/" element={<ConstructorPage />} />
         <Route path="/feed" element={<Feed />} />
         <Route path="/feed/:number" element={<OrderInfo />} />
-        <Route path="/ingredients/:id" element={<IngredientDetails />} />
+        <Route
+          path="/ingredients/:id"
+          element={
+            <div className={styles.detailPageWrap}>
+              <h3 className={clsx(styles.detailHeader, 'text text_type_main-large')}>
+                Детали ингредиента
+              </h3>
+              <IngredientDetails />
+            </div>
+          }
+        />
         <Route
           path="/login"
           element={
