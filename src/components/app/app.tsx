@@ -26,7 +26,7 @@ import { checkUserAuth } from '@slices/user';
 import { Preloader } from '@ui';
 import { clsx } from 'clsx';
 import { useEffect } from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate, useMatch } from 'react-router-dom';
 
 import { useDispatch, useSelector } from '@services/store';
 
@@ -90,10 +90,20 @@ const AppContent = ({
   return <RouteComponent />;
 };
 
+const ORDER_NUMBER_LENGTH = 6;
+
+const formatOrderNumber = (orderNumber = ''): string =>
+  `#${orderNumber.padStart(ORDER_NUMBER_LENGTH, '0')}`;
+
 const RouteComponent = (): React.JSX.Element => {
   const location = useLocation();
   const navigate = useNavigate();
   const background = (location.state as TLocationState | null)?.background;
+  const feedOrderMatch = useMatch('/feed/:number');
+  const profileOrderMatch = useMatch('/profile/orders/:number');
+  const orderTitle = formatOrderNumber(
+    feedOrderMatch?.params.number ?? profileOrderMatch?.params.number
+  );
 
   const handleModalClose = (): void => {
     void navigate(-1);
@@ -104,7 +114,17 @@ const RouteComponent = (): React.JSX.Element => {
       <Routes location={background ?? location}>
         <Route path="/" element={<ConstructorPage />} />
         <Route path="/feed" element={<Feed />} />
-        <Route path="/feed/:number" element={<OrderInfo />} />
+        <Route
+          path="/feed/:number"
+          element={
+            <div className={styles.detailPageWrap}>
+              <h3 className={clsx(styles.detailHeader, 'text text_type_digits-default')}>
+                {orderTitle}
+              </h3>
+              <OrderInfo />
+            </div>
+          }
+        />
         <Route
           path="/ingredients/:id"
           element={
@@ -168,7 +188,14 @@ const RouteComponent = (): React.JSX.Element => {
           path="/profile/orders/:number"
           element={
             <ProtectedRoute>
-              <OrderInfo />
+              <div className={styles.detailPageWrap}>
+                <h3
+                  className={clsx(styles.detailHeader, 'text text_type_digits-default')}
+                >
+                  {orderTitle}
+                </h3>
+                <OrderInfo />
+              </div>
             </ProtectedRoute>
           }
         />
@@ -188,7 +215,7 @@ const RouteComponent = (): React.JSX.Element => {
           <Route
             path="/feed/:number"
             element={
-              <Modal title="Детали заказа" onClose={handleModalClose}>
+              <Modal title={orderTitle} onClose={handleModalClose}>
                 <OrderInfo />
               </Modal>
             }
@@ -197,7 +224,7 @@ const RouteComponent = (): React.JSX.Element => {
             path="/profile/orders/:number"
             element={
               <ProtectedRoute>
-                <Modal title="Детали заказа" onClose={handleModalClose}>
+                <Modal title={orderTitle} onClose={handleModalClose}>
                   <OrderInfo />
                 </Modal>
               </ProtectedRoute>
