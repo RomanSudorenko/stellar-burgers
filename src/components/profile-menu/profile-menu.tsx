@@ -1,4 +1,4 @@
-import { logoutUser } from '@/services/slices/user';
+import { logoutUser } from '@slices/user';
 import { ProfileMenuUI } from '@ui';
 import { useLocation, useNavigate } from 'react-router-dom';
 
