@@ -70,4 +70,5 @@ export const selectOrderByNumber =
   (orderNumber: number) =>
   (state: RootState): TOrder | null =>
     state.feed.orders.find((order) => order.number === orderNumber) ??
+    state.profileOrders.orders.find((order) => order.number === orderNumber) ??
     (state.order.orderData?.number === orderNumber ? state.order.orderData : null);
