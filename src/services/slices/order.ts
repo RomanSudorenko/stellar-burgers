@@ -1,4 +1,4 @@
-import { orderBurgerApi } from '@api';
+import { orderBurgerApi, getOrderByNumberApi } from '@api';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 import type { RootState } from '../store';
@@ -7,11 +7,13 @@ import type { TOrder } from '@utils-types';
 type TOrderState = {
   orderRequest: boolean;
   orderModalData: TOrder | null;
+  orderData: TOrder | null;
 };
 
 const initialState: TOrderState = {
   orderRequest: false,
   orderModalData: null,
+  orderData: null,
 };
 
 export const createOrder = createAsyncThunk(
@@ -19,6 +21,14 @@ export const createOrder = createAsyncThunk(
   async (ingredientIds: string[]) => {
     const response = await orderBurgerApi(ingredientIds);
     return response.order;
+  }
+);
+
+export const fetchOrderByNumber = createAsyncThunk(
+  'order/fetchByNumber',
+  async (orderNumber: number) => {
+    const response = await getOrderByNumberApi(orderNumber);
+    return response.orders[0];
   }
 );
 
@@ -41,6 +51,9 @@ export const orderSlice = createSlice({
       })
       .addCase(createOrder.rejected, (state) => {
         state.orderRequest = false;
+      })
+      .addCase(fetchOrderByNumber.fulfilled, (state, action) => {
+        state.orderData = action.payload;
       });
   },
 });
@@ -52,3 +65,9 @@ export const selectOrderRequest = (state: RootState): boolean =>
 
 export const selectOrderModalData = (state: RootState): TOrder | null =>
   state.order.orderModalData;
+
+export const selectOrderByNumber =
+  (orderNumber: number) =>
+  (state: RootState): TOrder | null =>
+    state.feed.orders.find((order) => order.number === orderNumber) ??
+    (state.order.orderData?.number === orderNumber ? state.order.orderData : null);
