@@ -1,5 +1,9 @@
 import { selectIngredients } from '@slices/ingredients';
-import { selectOrderByNumber, fetchOrderByNumber } from '@slices/order';
+import {
+  selectOrderByNumber,
+  selectOrderError,
+  fetchOrderByNumber,
+} from '@slices/order';
 import { Preloader, OrderInfoUI } from '@ui';
 import { useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
@@ -14,6 +18,7 @@ export const OrderInfo = (): React.JSX.Element => {
   const orderNumber = Number(number);
   const orderData = useSelector(selectOrderByNumber(orderNumber));
   const ingredients = useSelector(selectIngredients);
+  const orderError = useSelector(selectOrderError);
 
   useEffect(() => {
     if (!orderData) {
@@ -60,6 +65,10 @@ export const OrderInfo = (): React.JSX.Element => {
       total,
     };
   }, [orderData, ingredients]);
+
+  if (!orderData && orderError) {
+    return <p className="text text_type_main-medium">{orderError}</p>;
+  }
 
   if (!orderInfo) {
     return <Preloader />;

@@ -8,12 +8,14 @@ type TOrderState = {
   orderRequest: boolean;
   orderModalData: TOrder | null;
   orderData: TOrder | null;
+  orderError: string | null;
 };
 
 const initialState: TOrderState = {
   orderRequest: false,
   orderModalData: null,
   orderData: null,
+  orderError: null,
 };
 
 export const createOrder = createAsyncThunk(
@@ -28,7 +30,11 @@ export const fetchOrderByNumber = createAsyncThunk(
   'order/fetchByNumber',
   async (orderNumber: number) => {
     const response = await getOrderByNumberApi(orderNumber);
-    return response.orders[0];
+    const [order] = response.orders;
+    if (!order) {
+      throw new Error('Заказ не найден');
+    }
+    return order;
   }
 );
 
@@ -52,8 +58,14 @@ export const orderSlice = createSlice({
       .addCase(createOrder.rejected, (state) => {
         state.orderRequest = false;
       })
+      .addCase(fetchOrderByNumber.pending, (state) => {
+        state.orderError = null;
+      })
       .addCase(fetchOrderByNumber.fulfilled, (state, action) => {
         state.orderData = action.payload;
+      })
+      .addCase(fetchOrderByNumber.rejected, (state, action) => {
+        state.orderError = action.error.message ?? 'Заказ не найден';
       });
   },
 });
@@ -72,3 +84,6 @@ export const selectOrderByNumber =
     state.feed.orders.find((order) => order.number === orderNumber) ??
     state.profileOrders.orders.find((order) => order.number === orderNumber) ??
     (state.order.orderData?.number === orderNumber ? state.order.orderData : null);
+
+export const selectOrderError = (state: RootState): string | null =>
+  state.order.orderError;

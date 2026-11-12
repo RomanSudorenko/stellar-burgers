@@ -1,6 +1,8 @@
 import { getOrdersApi } from '@api';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
+import { logoutUser } from './user';
+
 import type { RootState } from '../store';
 import type { TOrder } from '@utils-types';
 
@@ -37,7 +39,8 @@ export const profileOrdersSlice = createSlice({
       .addCase(fetchProfileOrders.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message ?? null;
-      });
+      })
+      .addCase(logoutUser.fulfilled, () => initialState);
   },
 });
 
