@@ -1,19 +1,51 @@
-import { AppHeader } from '@components';
-import { ConstructorPage } from '@pages';
+import {
+  AppHeader,
+  IngredientDetails,
+  Modal,
+  OrderInfo,
+  ProtectedRoute,
+} from '@components';
+import {
+  ConstructorPage,
+  Feed,
+  ForgotPassword,
+  Login,
+  NotFound404,
+  Profile,
+  ProfileOrders,
+  Register,
+  ResetPassword,
+} from '@pages';
+import {
+  fetchIngredients,
+  selectIngredients,
+  selectIngredientsLoading,
+  selectIngredientsError,
+} from '@slices/ingredients';
+import { checkUserAuth } from '@slices/user';
 import { Preloader } from '@ui';
-import { Routes, Route } from 'react-router-dom';
+import { clsx } from 'clsx';
+import { useEffect } from 'react';
+import { Routes, Route, useLocation, useNavigate, useMatch } from 'react-router-dom';
 
-import type { AppContentProps } from './type';
-import type { TIngredient } from '@utils-types';
+import { useDispatch, useSelector } from '@services/store';
+
+import type { AppContentProps, TLocationState } from './type';
 
 import '../../index.css';
 
 import styles from './app.module.css';
 
 const App = (): React.JSX.Element => {
-  const ingredients: TIngredient[] = [];
-  const isIngredientsLoading = false;
-  const ingredientsError = null;
+  const dispatch = useDispatch();
+  const ingredients = useSelector(selectIngredients);
+  const isIngredientsLoading = useSelector(selectIngredientsLoading);
+  const ingredientsError = useSelector(selectIngredientsError);
+
+  useEffect(() => {
+    void dispatch(fetchIngredients());
+    void dispatch(checkUserAuth());
+  }, [dispatch]);
 
   return (
     <div className={styles.app}>
@@ -58,12 +90,148 @@ const AppContent = ({
   return <RouteComponent />;
 };
 
+const ORDER_NUMBER_LENGTH = 6;
+
+const formatOrderNumber = (orderNumber = ''): string =>
+  `#${orderNumber.padStart(ORDER_NUMBER_LENGTH, '0')}`;
+
 const RouteComponent = (): React.JSX.Element => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const background = (location.state as TLocationState | null)?.background;
+  const feedOrderMatch = useMatch('/feed/:number');
+  const profileOrderMatch = useMatch('/profile/orders/:number');
+  const orderTitle = formatOrderNumber(
+    feedOrderMatch?.params.number ?? profileOrderMatch?.params.number
+  );
+
+  const handleModalClose = (): void => {
+    void navigate(-1);
+  };
+
   return (
     <>
-      <Routes>
+      <Routes location={background ?? location}>
         <Route path="/" element={<ConstructorPage />} />
+        <Route path="/feed" element={<Feed />} />
+        <Route
+          path="/feed/:number"
+          element={
+            <div className={styles.detailPageWrap}>
+              <h3 className={clsx(styles.detailHeader, 'text text_type_digits-default')}>
+                {orderTitle}
+              </h3>
+              <OrderInfo />
+            </div>
+          }
+        />
+        <Route
+          path="/ingredients/:id"
+          element={
+            <div className={styles.detailPageWrap}>
+              <h3 className={clsx(styles.detailHeader, 'text text_type_main-large')}>
+                Детали ингредиента
+              </h3>
+              <IngredientDetails />
+            </div>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <ProtectedRoute onlyUnAuth>
+              <Login />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <ProtectedRoute onlyUnAuth>
+              <Register />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <ProtectedRoute onlyUnAuth>
+              <ForgotPassword />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <ProtectedRoute onlyUnAuth>
+              <ResetPassword />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/orders"
+          element={
+            <ProtectedRoute>
+              <ProfileOrders />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/orders/:number"
+          element={
+            <ProtectedRoute>
+              <div className={styles.detailPageWrap}>
+                <h3
+                  className={clsx(styles.detailHeader, 'text text_type_digits-default')}
+                >
+                  {orderTitle}
+                </h3>
+                <OrderInfo />
+              </div>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<NotFound404 />} />
       </Routes>
+
+      {background && (
+        <Routes>
+          <Route
+            path="/ingredients/:id"
+            element={
+              <Modal title="Детали ингредиента" onClose={handleModalClose}>
+                <IngredientDetails />
+              </Modal>
+            }
+          />
+          <Route
+            path="/feed/:number"
+            element={
+              <Modal title={orderTitle} onClose={handleModalClose}>
+                <OrderInfo />
+              </Modal>
+            }
+          />
+          <Route
+            path="/profile/orders/:number"
+            element={
+              <ProtectedRoute>
+                <Modal title={orderTitle} onClose={handleModalClose}>
+                  <OrderInfo />
+                </Modal>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      )}
     </>
   );
 };
